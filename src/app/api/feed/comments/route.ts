@@ -11,7 +11,7 @@ const mockComments = {
       userId: 'user2',
       userName: 'John Chen',
       userAvatar: '/assets/feed/avatar2.jpg',
-      content: 'Great work on the solar panel installation! What's the expected power output increase?',
+      content: 'Great work on the solar panel installation! What\'s the expected power output increase?',
       createdAt: new Date('2025-04-03T15:10:00'),
     },
     {
@@ -20,7 +20,7 @@ const mockComments = {
       userId: 'user1',
       userName: 'Sarah Miller',
       userAvatar: '/assets/feed/avatar1.jpg',
-      content: 'Thanks John! We're expecting about 120 kWh per day in additional output.',
+      content: 'Thanks John! We\'re expecting about 120 kWh per day in additional output.',
       createdAt: new Date('2025-04-03T15:20:00'),
     },
     {
@@ -40,7 +40,7 @@ const mockComments = {
       userId: 'user3',
       userName: 'Maria Rodriguez',
       userAvatar: '/assets/feed/avatar3.jpg',
-      content: 'I can't wait to taste these tomatoes! Will they be available in the community kitchen?',
+      content: 'I can\'t wait to taste these tomatoes! Will they be available in the community kitchen?',
       createdAt: new Date('2025-04-03T11:05:00'),
     },
     {
@@ -49,7 +49,7 @@ const mockComments = {
       userId: 'user2',
       userName: 'John Chen',
       userAvatar: '/assets/feed/avatar2.jpg',
-      content: 'Yes, we'll distribute the first batch through the community kitchen. The taste is slightly more tart than Earth tomatoes due to the soil composition.',
+      content: 'Yes, we\'ll distribute the first batch through the community kitchen. The taste is slightly more tart than Earth tomatoes due to the soil composition.',
       createdAt: new Date('2025-04-03T11:30:00'),
     },
   ]

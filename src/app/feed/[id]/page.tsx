@@ -81,7 +81,7 @@ export default function PostDetailPage() {
             userId: 'user2',
             userName: 'John Chen',
             userAvatar: '/assets/feed/avatar2.jpg',
-            content: 'Great work on the solar panel installation! What's the expected power output increase?',
+            content: 'Great work on the solar panel installation! What\'s the expected power output increase?',
             createdAt: new Date('2025-04-03T15:10:00'),
           },
           {
@@ -90,7 +90,7 @@ export default function PostDetailPage() {
             userId: 'user1',
             userName: 'Sarah Miller',
             userAvatar: '/assets/feed/avatar1.jpg',
-            content: 'Thanks John! We're expecting about 120 kWh per day in additional output.',
+            content: 'Thanks John! We\'re expecting about 120 kWh per day in additional output.',
             createdAt: new Date('2025-04-03T15:20:00'),
           },
           {
