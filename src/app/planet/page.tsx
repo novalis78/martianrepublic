@@ -18,9 +18,7 @@ interface Location {
   imageUrl?: string;
 }
 
-interface Props {}
-
-export default function PlanetPage({}: Props) {
+export default function PlanetPage() {
   const [activeTab, setActiveTab] = useState('map');
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [mapMode, setMapMode] = useState<'topographic' | 'satellite' | 'elevation'>('topographic');
