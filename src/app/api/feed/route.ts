@@ -180,9 +180,9 @@ export async function POST(request: NextRequest) {
     // For now, we'll simulate a successful creation
     const newPost = {
       id: `post-${Date.now()}`,
-      userId: session.user.id || 'unknown-user',
-      userName: session.user.name || 'Martian User',
-      userAvatar: session.user.image,
+      userId: session?.user?.id || 'unknown-user',
+      userName: session?.user?.name || 'Martian User',
+      userAvatar: session?.user?.image || undefined,
       content: body.content,
       attachmentUrl: body.attachmentUrl,
       attachmentType: body.attachmentType,
