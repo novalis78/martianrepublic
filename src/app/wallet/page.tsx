@@ -47,7 +47,8 @@ function WalletContent() {
     walletBalance,
     encryptedWallet,
     encryptedSeedPhrase,
-    reloadWalletData: reloadWalletContext
+    reloadWalletData: reloadWalletContext,
+    lockWallet: endSession
   } = useWallet();
 
   useEffect(() => {
