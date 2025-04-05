@@ -27,7 +27,9 @@ export function getFullName(session: Session | null): string {
   if (!session?.user) {
     return 'Guest'
   }
-  return session.user.fullname || session.user.name || 'Unknown'
+  // The session.user.fullname is not available in the extended types
+  // So we'll just use the name field
+  return session.user.name || 'Unknown'
 }
 
 /**
