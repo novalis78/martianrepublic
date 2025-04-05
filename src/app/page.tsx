@@ -15,7 +15,14 @@ export default function Home() {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40 text-center">
-          <div className="flex justify-center mb-8">
+          <div className="flex flex-col items-center mb-8">
+            <Image 
+              src="/assets/seal.png" 
+              alt="Martian Republic Seal" 
+              width={200} 
+              height={200}
+              className="mb-6"
+            />
             <Image 
               src="/assets/mars-logo.svg" 
               alt="Mars Logo" 
