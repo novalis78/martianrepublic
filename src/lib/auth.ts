@@ -4,17 +4,6 @@
 import { Session } from 'next-auth'
 import type { User } from '@/types/models'
 
-// Extend the Session type to include our custom fields
-declare module 'next-auth' {
-  interface Session {
-    user: User & {
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  }
-}
-
 /**
  * Check if the user is authenticated
  */
