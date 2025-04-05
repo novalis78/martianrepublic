@@ -122,9 +122,9 @@ export async function POST(request: NextRequest) {
     const newComment = {
       id: `c${Date.now()}`,
       postId: body.postId,
-      userId: session.user.id || 'unknown-user',
-      userName: session.user.name || 'Martian User',
-      userAvatar: session.user.image,
+      userId: session?.user?.id || 'unknown-user',
+      userName: session?.user?.name || 'Martian User',
+      userAvatar: session?.user?.image || undefined,
       content: body.content,
       createdAt: new Date(),
     };
