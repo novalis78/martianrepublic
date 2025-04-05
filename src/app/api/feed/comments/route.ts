@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth-options';
 
+// Define comment interface
+interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  content: string;
+  createdAt: Date;
+}
+
 // Mock comments data - in a real app this would come from a database
-const mockComments = {
+const mockComments: Record<string, Comment[]> = {
   '1': [ // Comments for post ID 1
     {
       id: 'c1',
