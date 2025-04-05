@@ -4,7 +4,8 @@
 // or create a .env file in the root directory
 
 const { MongoClient } = require('mongodb');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
 
 async function initializeDatabase() {
   const uri = process.env.MONGODB_URI;
@@ -31,19 +32,23 @@ async function initializeDatabase() {
       validator: {
         $jsonSchema: {
           bsonType: 'object',
-          required: ['email', 'name'],
+          required: ['email', 'fullname'],
           properties: {
             email: {
               bsonType: 'string',
               description: 'must be a string and is required'
             },
-            name: {
+            fullname: {
+              bsonType: 'string',
+              description: 'must be a string and is required'
+            },
+            password: {
               bsonType: 'string',
               description: 'must be a string and is required'
             },
             emailVerified: {
-              bsonType: ['date', 'null'],
-              description: 'must be a date or null'
+              bsonType: ['date', 'null', 'bool'],
+              description: 'must be a date, boolean or null'
             },
             image: {
               bsonType: ['string', 'null'],
@@ -52,6 +57,22 @@ async function initializeDatabase() {
             citizenStatus: {
               enum: ['newcomer', 'applicant', 'general_public', 'citizen', null],
               description: 'must be one of the enum values or null'
+            },
+            publicAddress: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            walletOpen: {
+              bsonType: ['bool', 'null'],
+              description: 'must be a boolean or null'
+            },
+            encryptedWallet: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            encryptedSeedPhrase: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
             }
           }
         }
@@ -66,20 +87,36 @@ async function initializeDatabase() {
           required: ['userId'],
           properties: {
             userId: {
-              bsonType: 'string',
-              description: 'must be a string and is required'
+              bsonType: ['string', 'objectId'],
+              description: 'must be a string or ObjectId and is required'
+            },
+            fullname: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            email: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
             },
             citizen: {
-              bsonType: 'bool',
-              description: 'must be a boolean'
+              bsonType: ['bool', 'null'],
+              description: 'must be a boolean or null'
             },
             generalPublic: {
-              bsonType: 'bool',
-              description: 'must be a boolean'
+              bsonType: ['bool', 'null'],
+              description: 'must be a boolean or null'
             },
-            civicWalletOpen: {
-              bsonType: 'bool',
-              description: 'must be a boolean'
+            walletOpen: {
+              bsonType: ['bool', 'null'],
+              description: 'must be a boolean or null'
+            },
+            hasApplication: {
+              bsonType: ['bool', 'null'],
+              description: 'must be a boolean or null'
+            },
+            endorseCount: {
+              bsonType: ['int', 'null'],
+              description: 'must be an integer or null'
             },
             bio: {
               bsonType: ['string', 'null'],
@@ -88,6 +125,14 @@ async function initializeDatabase() {
             avatarUrl: {
               bsonType: ['string', 'null'],
               description: 'must be a string or null'
+            },
+            createdAt: {
+              bsonType: ['date', 'null'],
+              description: 'must be a date or null'
+            },
+            updatedAt: {
+              bsonType: ['date', 'null'],
+              description: 'must be a date or null'
             }
           }
         }
@@ -500,6 +545,50 @@ async function initializeDatabase() {
       }
     });
     
+    // Citizen collection
+    await db.createCollection('citizen', {
+      validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          required: ['userId'],
+          properties: {
+            userId: {
+              bsonType: ['string', 'objectId'],
+              description: 'must be a string or ObjectId and is required'
+            },
+            firstName: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            lastName: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            displayName: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            shortBio: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            publicAddress: {
+              bsonType: ['string', 'null'],
+              description: 'must be a string or null'
+            },
+            createdAt: {
+              bsonType: ['date', 'null'],
+              description: 'must be a date or null'
+            },
+            updatedAt: {
+              bsonType: ['date', 'null'],
+              description: 'must be a date or null'
+            }
+          }
+        }
+      }
+    });
+    
     // CitizenApplications collection
     await db.createCollection('citizenApplications', {
       validator: {
@@ -508,8 +597,8 @@ async function initializeDatabase() {
           required: ['userId', 'status', 'submittedAt'],
           properties: {
             userId: {
-              bsonType: 'string',
-              description: 'must be a string and is required'
+              bsonType: ['string', 'objectId'],
+              description: 'must be a string or ObjectId and is required'
             },
             status: {
               enum: ['pending', 'in_review', 'approved', 'rejected'],
@@ -624,40 +713,64 @@ async function initializeDatabase() {
     console.log('Database initialized successfully');
     
     // Insert demo admin user
+    const now = new Date();
     const adminUser = {
       email: 'admin@martianrepublic.org',
-      name: 'Admin User',
-      emailVerified: new Date(),
+      fullname: 'Admin User',
+      emailVerified: now,
       image: null,
       citizenStatus: 'citizen',
-      password: '$2b$10$sU5Mb0LZh3.TgV3FSaTSxuhOJ502osWKPwdXOK7G4mAV3EIy1Y6l6' // hashed 'password123'
+      password: '$2b$10$sU5Mb0LZh3.TgV3FSaTSxuhOJ502osWKPwdXOK7G4mAV3EIy1Y6l6', // hashed 'password123'
+      walletOpen: true,
+      publicAddress: '0x12345678901234567890123456789012',
+      createdAt: now,
+      updatedAt: now,
+      signedEula: true,
+      termsAccepted: now
     };
     
     const existingAdmin = await db.collection('users').findOne({ email: adminUser.email });
     if (!existingAdmin) {
-      await db.collection('users').insertOne(adminUser);
+      const result = await db.collection('users').insertOne(adminUser);
       console.log('Demo admin user created');
       
       // Create related profile and wallet
-      const adminId = (await db.collection('users').findOne({ email: adminUser.email }))._id.toString();
+      const adminId = result.insertedId;
       
       await db.collection('profiles').insertOne({
         userId: adminId,
+        fullname: 'Admin User',
+        email: 'admin@martianrepublic.org',
         citizen: true,
         generalPublic: false,
-        civicWalletOpen: true,
+        walletOpen: true,
+        hasApplication: false,
+        endorseCount: 0,
         bio: 'Administrator of the Martian Republic',
-        avatarUrl: null
+        avatarUrl: null,
+        createdAt: now,
+        updatedAt: now
+      });
+      
+      await db.collection('citizen').insertOne({
+        userId: adminId,
+        firstName: 'Admin',
+        lastName: 'User',
+        displayName: 'Admin User',
+        shortBio: 'Administrator of the Martian Republic',
+        publicAddress: '0x12345678901234567890123456789012',
+        createdAt: now,
+        updatedAt: now
       });
       
       await db.collection('wallets').insertOne({
-        userId: adminId,
+        userId: adminId.toString(),
         publicAddress: '0x12345678901234567890123456789012',
         balance: 1000,
-        createdAt: new Date()
+        createdAt: now
       });
       
-      console.log('Demo admin profile and wallet created');
+      console.log('Demo admin profile, citizen record, and wallet created');
     } else {
       console.log('Demo admin user already exists');
     }
