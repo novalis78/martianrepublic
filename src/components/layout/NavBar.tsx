@@ -175,19 +175,20 @@ export default function NavBar() {
                 {isProfileOpen && (
                   <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
                     <Link 
-                      href="/wallet/dashboard"
+                      href="/wallet"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       Dashboard
                     </Link>
-                    <Link 
+                    {/* Profile link disabled until page is implemented */}
+                    {/*<Link 
                       href="/wallet/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       Profile
-                    </Link>
+                    </Link>*/}
                     <button
                       className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                       onClick={() => signOut({ callbackUrl: '/' })}
@@ -271,19 +272,20 @@ export default function NavBar() {
               <>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
                 <Link 
-                  href="/wallet/dashboard" 
+                  href="/wallet" 
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
-                <Link 
+                {/* Profile link disabled until page is implemented */}
+                {/*<Link 
                   href="/wallet/profile" 
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Profile
-                </Link>
+                </Link>*/}
                 <button
                   className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
                   onClick={() => signOut({ callbackUrl: '/' })}

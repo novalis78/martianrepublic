@@ -9,7 +9,7 @@ import { Button, Input, Card, LoadingSpinner, ErrorBoundary } from '@/components
 function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/wallet/dashboard';
+  const callbackUrl = searchParams.get('callbackUrl') || '/wallet';
   const error = searchParams.get('error');
   const success = searchParams.get('success');
 
