@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection, ObjectId } from 'mongodb';
+import { MongoClient, Db, Collection, ObjectId, Document } from 'mongodb';
 
 // Define a type for the connection
 interface MongoConnection {
@@ -84,7 +84,7 @@ export function toObjectId(id: string) {
 }
 
 // Collection helpers
-export async function getCollection<T = any>(name: string): Promise<Collection<T>> {
+export async function getCollection<T extends Document = Document>(name: string): Promise<Collection<T>> {
   const { db } = await connectToDatabase();
   return db.collection<T>(name);
 }
