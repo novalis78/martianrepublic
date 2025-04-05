@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { connectToDatabase } from "@/lib/mongodb";
+// @ts-ignore
 import bcrypt from "bcrypt";
 
 export const authOptions: NextAuthOptions = {
