@@ -205,7 +205,7 @@ export default function FeedPage() {
       id: `new-${Date.now()}`,
       userId: session?.user?.id || 'unknown',
       userName: session?.user?.name || 'Martian User',
-      userAvatar: session?.user?.image,
+      userAvatar: session?.user?.image || undefined,
       content: newPostContent,
       likesCount: 0,
       commentsCount: 0,
