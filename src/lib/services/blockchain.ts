@@ -126,11 +126,29 @@ export class WalletService {
   }
   
   /**
-   * Generate a new BIP39 mnemonic seed phrase
-   * @returns A 12-word seed phrase
+   * Generate a new BIP39 mnemonic seed phrase with strong entropy
+   * @param wordCount Number of words (12 or 24)
+   * @returns A secure seed phrase
    */
-  generateSeedPhrase(): string {
-    return bip39.generateMnemonic();
+  generateSeedPhrase(wordCount: number = 12): string {
+    try {
+      // Import the entropy generator dynamically (only in browser)
+      const entropyModule = require('@/lib/wallet/entropyGenerator');
+      
+      // Determine entropy size based on word count (16 bytes for 12 words, 32 bytes for 24 words)
+      const entropySize = wordCount === 24 ? 32 : 16;
+      
+      // Generate strong entropy
+      const entropy = entropyModule.generateStrongEntropy(entropySize);
+      
+      // Generate mnemonic from entropy
+      return bip39.entropyToMnemonic(Buffer.from(entropy));
+    } catch (error) {
+      console.warn('Enhanced entropy generation failed, falling back to default method:', error);
+      // Fallback to standard generation method
+      const strength = wordCount === 24 ? 256 : 128;
+      return bip39.generateMnemonic(strength);
+    }
   }
   
   /**

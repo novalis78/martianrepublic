@@ -17,6 +17,7 @@ function WalletCreateContent() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [seedWords, setSeedWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [wordCount, setWordCount] = useState<number>(12);
 
   // Check if user is authenticated
   if (status === 'unauthenticated') {
@@ -24,23 +25,26 @@ function WalletCreateContent() {
     return null;
   }
 
-  // Generate a new seed phrase
+  // Generate a new seed phrase with enhanced entropy
   const generateSeed = async () => {
     try {
-      // Fetch a new seed phrase from our API
+      // Fetch a new seed phrase from our API with specified word count
       const response = await fetch('/api/wallet/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ wordCount }),
       });
       
       if (!response.ok) {
-        // If the API fails, generate one client-side
-        // For this, we'd need to import the BIP39 library in the client
-        // For now, show an error and return a dummy seed for demo purposes
-        setError('Failed to generate seed phrase from server. Using fallback method.');
+        // If the API fails, show an error
+        setError('Failed to generate secure seed phrase from server. Using fallback method.');
         
+        // For demo purposes only - in production you'd want proper entropy
+        if (wordCount === 24) {
+          return 'abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert';
+        }
         return 'abandon ability able about above absent absorb abstract absurd abuse access accident';
       }
       
@@ -50,7 +54,10 @@ function WalletCreateContent() {
       setError('Failed to generate seed phrase');
       console.error('Seed generation error:', error);
       
-      // Fallback to a dummy seed for demo purposes
+      // Fallback seed
+      if (wordCount === 24) {
+        return 'abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert';
+      }
       return 'abandon ability able about above absent absorb abstract absurd abuse access accident';
     }
   };
@@ -230,6 +237,51 @@ function WalletCreateContent() {
                       <li>Never share your seed phrase with anyone</li>
                       <li>The Martian Republic will never ask for your seed phrase</li>
                     </ul>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Security Level
+                    </label>
+                    <div className="flex items-center space-x-4">
+                      <div 
+                        className={`relative flex items-center justify-center px-4 py-2 rounded-md cursor-pointer ${
+                          wordCount === 12 
+                            ? 'bg-mars-red text-white' 
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                        onClick={() => setWordCount(12)}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span className="font-medium">12 Words</span>
+                          <span className="text-xs mt-1 opacity-80">128-bit Security</span>
+                        </div>
+                      </div>
+                      
+                      <div 
+                        className={`relative flex items-center justify-center px-4 py-2 rounded-md cursor-pointer ${
+                          wordCount === 24 
+                            ? 'bg-mars-red text-white' 
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                        onClick={() => setWordCount(24)}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span className="font-medium">24 Words</span>
+                          <span className="text-xs mt-1 opacity-80">256-bit Security</span>
+                        </div>
+                        {wordCount !== 24 && (
+                          <span className="absolute top-0 right-0 transform -translate-y-1/2 translate-x-1/2 flex h-5 w-5">
+                            <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500 text-white text-xs font-bold items-center justify-center">
+                              ✓
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      A 24-word recovery phrase provides maximum security for high-value wallets.
+                    </p>
                   </div>
                 </div>
               </div>

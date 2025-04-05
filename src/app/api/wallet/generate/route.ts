@@ -5,7 +5,7 @@ import walletService from '@/lib/services/blockchain';
 
 /**
  * POST /api/wallet/generate
- * Generates a new seed phrase
+ * Generates a new seed phrase with enhanced entropy
  */
 export async function POST(req: NextRequest) {
   try {
@@ -16,12 +16,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Generate a new seed phrase
-    const seedPhrase = walletService.generateSeedPhrase();
+    // Parse the request body if provided
+    let wordCount = 12; // Default to 12 words
+    
+    // Check if request includes a wordCount parameter
+    try {
+      const body = await req.json();
+      if (body && body.wordCount) {
+        // Validate wordCount is either 12 or 24
+        if (body.wordCount === 24) {
+          wordCount = 24;
+        }
+      }
+    } catch (e) {
+      // If body parsing fails, use default value
+    }
+    
+    // Generate a new seed phrase with specified word count
+    const seedPhrase = walletService.generateSeedPhrase(wordCount);
     
     return NextResponse.json({
       success: true,
       seedPhrase,
+      wordCount,
+      entropyBits: wordCount === 24 ? 256 : 128
     });
   } catch (error) {
     console.error('Error generating seed phrase:', error);

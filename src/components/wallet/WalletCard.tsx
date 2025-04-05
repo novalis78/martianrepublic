@@ -23,7 +23,7 @@ const WalletCard: React.FC<WalletCardProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 shadow-md border border-gray-700 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''} ${className}`}
+      className={`bg-gradient-to-br from-[#1c0d10] to-[#2d1216] rounded-xl p-5 shadow-md border border-mars-red/30 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''} ${className}`}
       onClick={onClick}
     >
       <div className="flex justify-between items-start mb-4">
