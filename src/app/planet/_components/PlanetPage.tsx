@@ -584,7 +584,7 @@ export default function PlanetPageComponent() {
                   
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">Martian Calendar</h3>
-                    <p className="mb-4">The Martian calendar is based on Mars' orbit around the Sun, with each year (or "sol") lasting 668.6 Martian solar days (sols). The Martian Republic uses a calendar with 24 months of 28 sols each, plus a special 5-day period at the end of the year.</p>
+                    <p className="mb-4">The Martian calendar is based on Mars&apos; orbit around the Sun, with each year (or &quot;sol&quot;) lasting 668.6 Martian solar days (sols). The Martian Republic uses a calendar with 24 months of 28 sols each, plus a special 5-day period at the end of the year.</p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>

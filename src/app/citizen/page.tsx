@@ -231,7 +231,7 @@ export default function CitizenPage() {
                     <li>Vote on proposals that shape the future of the planet</li>
                     <li>Access to exclusive Martian resources and territories</li>
                     <li>Help build the foundation of a new civilization</li>
-                    <li>Be part of humanity's next chapter</li>
+                    <li>Be part of humanity&apos;s next chapter</li>
                   </ul>
                   <button
                     onClick={() => setActiveSection('application')}
