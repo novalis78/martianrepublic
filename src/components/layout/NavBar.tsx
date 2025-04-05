@@ -32,7 +32,7 @@ export default function NavBar() {
   const getCitizenStatusBadge = () => {
     if (!session?.user?.citizenStatus) return null
     
-    const status = session.user.citizenStatus
+    const status = session.user?.citizenStatus
     
     if (status === 'citizen') {
       return (
@@ -138,11 +138,11 @@ export default function NavBar() {
                   <span className="sr-only">Open user menu</span>
                   <div className="flex items-center space-x-2 border border-gray-300 dark:border-gray-700 rounded-full pl-2 pr-3 py-1">
                     <div className="h-8 w-8 rounded-full bg-mars-red flex items-center justify-center text-white">
-                      {session.user.name ? session.user.name.charAt(0).toUpperCase() : '?'}
+                      {session?.user?.name ? session.user?.name.charAt(0).toUpperCase() : '?'}
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {session.user.name || 'Martian User'}
+                        {session?.user?.name || 'Martian User'}
                       </span>
                       <div>
                         {getCitizenStatusBadge()}
