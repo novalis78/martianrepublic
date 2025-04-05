@@ -1,0 +1,1 @@
+can you do a npm run build, follwed by conventional commit and push, after each incremental progressive feature?

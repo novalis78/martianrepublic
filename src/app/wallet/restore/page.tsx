@@ -26,7 +26,7 @@ function WalletRestoreContent() {
     setError('');
 
     try {
-      // Validate input
+      // Client-side validations
       if (!seedPhrase.trim()) {
         throw new Error('Seed phrase is required');
       }
@@ -49,9 +49,46 @@ function WalletRestoreContent() {
         throw new Error('Passwords do not match');
       }
 
-      // In a real implementation, this would restore a wallet from the seed phrase
-      // For now, we'll just simulate a delay and redirect to the wallet page
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // First verify the seed phrase is valid via the API
+      const verifyResponse = await fetch('/api/wallet/operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'verify',
+          seedPhrase: seedPhrase.trim(),
+        }),
+      });
+
+      const verifyData = await verifyResponse.json();
+      
+      if (!verifyResponse.ok) {
+        throw new Error(verifyData.error || 'Error verifying seed phrase');
+      }
+      
+      if (!verifyData.isValid) {
+        throw new Error('Invalid seed phrase. Please check for typos.');
+      }
+
+      // Now attempt to restore the wallet
+      const response = await fetch('/api/wallet/operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'restore',
+          seedPhrase: seedPhrase.trim(),
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to restore wallet');
+      }
       
       // Redirect to wallet page
       router.push('/wallet?success=wallet_restored');

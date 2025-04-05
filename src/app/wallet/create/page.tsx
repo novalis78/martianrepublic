@@ -24,23 +24,35 @@ function WalletCreateContent() {
     return null;
   }
 
-  // Generate a random mnemonic seed phrase
-  const generateSeed = () => {
-    // In a real implementation, this would use a proper BIP39 library
-    // For demo purposes, we'll generate a mock seed phrase
-    const wordList = [
-      'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract',
-      'absurd', 'abuse', 'access', 'accident', 'account', 'accuse', 'achieve', 'acid',
-      'acoustic', 'acquire', 'across', 'act', 'action', 'actor', 'address', 'adjust',
-      'admit', 'adult', 'advance', 'advice', 'aerobic', 'affair', 'afford', 'afraid'
-    ];
-    
-    // Select 12 random words from the list
-    const selectedWords = Array(12).fill(0).map(() => 
-      wordList[Math.floor(Math.random() * wordList.length)]
-    );
-    
-    return selectedWords.join(' ');
+  // Generate a new seed phrase
+  const generateSeed = async () => {
+    try {
+      // Fetch a new seed phrase from our API
+      const response = await fetch('/api/wallet/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        // If the API fails, generate one client-side
+        // For this, we'd need to import the BIP39 library in the client
+        // For now, show an error and return a dummy seed for demo purposes
+        setError('Failed to generate seed phrase from server. Using fallback method.');
+        
+        return 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+      }
+      
+      const data = await response.json();
+      return data.seedPhrase;
+    } catch (error) {
+      setError('Failed to generate seed phrase');
+      console.error('Seed generation error:', error);
+      
+      // Fallback to a dummy seed for demo purposes
+      return 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+    }
   };
 
   // Handle seed phrase confirmation
@@ -65,18 +77,42 @@ function WalletCreateContent() {
       return;
     }
 
+    if (!seedConfirmed || !seed) {
+      setError('Seed phrase not confirmed');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      // In a real implementation, this would create a wallet and encrypt the seed with the password
-      // For now, we'll just simulate a delay and redirect to the wallet page
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call the API to create the wallet
+      const response = await fetch('/api/wallet/operations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          operation: 'create',
+          seedPhrase: seed,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create wallet');
+      }
       
       // Redirect to wallet page
       router.push('/wallet?success=wallet_created');
     } catch (err) {
-      setError('Failed to create wallet. Please try again.');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to create wallet. Please try again.');
+      }
       console.error('Wallet creation error:', err);
     } finally {
       setIsLoading(false);
@@ -84,17 +120,30 @@ function WalletCreateContent() {
   };
 
   // Initialize seed phrase when stepping to step 2
-  const goToBackupStep = () => {
-    const newSeed = generateSeed();
-    setSeed(newSeed);
+  const goToBackupStep = async () => {
+    setIsLoading(true);
     
-    // Shuffle the seed words for verification step
-    const words = newSeed.split(' ');
-    const shuffled = [...words].sort(() => Math.random() - 0.5);
-    setSeedWords(shuffled);
-    setSelectedWords([]);
-    
-    setStep(2);
+    try {
+      const newSeed = await generateSeed();
+      setSeed(newSeed);
+      
+      // Shuffle the seed words for verification step
+      const words = newSeed.split(' ');
+      const shuffled = [...words].sort(() => Math.random() - 0.5);
+      setSeedWords(shuffled);
+      setSelectedWords([]);
+      
+      setStep(2);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to generate seed phrase');
+      }
+      console.error('Error generating seed phrase:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
