@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -8,13 +10,8 @@ export default function Home() {
       <div className="relative bg-gradient-to-b from-black to-mars-dark overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-black opacity-60"></div>
-          <Image 
-            src="/assets/planet/mars-surface.jpg" 
-            alt="Mars Surface" 
-            fill
-            priority
-            className="object-cover"
-          />
+          {/* Fallback gradient background instead of image */}
+          <div className="absolute inset-0 bg-gradient-to-br from-mars-dark to-black"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40 text-center">
@@ -108,18 +105,12 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center mb-12">Explore the Martian Republic</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Wallet */}
             <Link
               href="/wallet"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/wallet/wallet-banner.jpg" 
-                  alt="Martian Wallet"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -137,18 +128,12 @@ export default function Home() {
               </div>
             </Link>
             
+            {/* Citizen */}
             <Link
               href="/citizen"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/citizen/citizen-banner.jpg" 
-                  alt="Martian Citizenship"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -166,18 +151,12 @@ export default function Home() {
               </div>
             </Link>
             
+            {/* Congress */}
             <Link
               href="/congress"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/congress/congress-banner.jpg" 
-                  alt="Martian Congress"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -195,18 +174,12 @@ export default function Home() {
               </div>
             </Link>
             
+            {/* Feed */}
             <Link
               href="/feed"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/feed/feed-banner.jpg" 
-                  alt="Martian Feed"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,18 +197,12 @@ export default function Home() {
               </div>
             </Link>
             
+            {/* Logbook */}
             <Link
               href="/logbook"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/logbook/logbook-banner.jpg" 
-                  alt="Martian Logbook"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -253,18 +220,12 @@ export default function Home() {
               </div>
             </Link>
             
+            {/* Inventory */}
             <Link
               href="/inventory"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/inventory/inventory-banner.jpg" 
-                  alt="Martian Inventory"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -282,18 +243,12 @@ export default function Home() {
               </div>
             </Link>
             
+            {/* Planet */}
             <Link
               href="/planet"
               className="bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-800 relative">
-                <Image 
-                  src="/assets/planet/planet-banner.jpg" 
-                  alt="Mars Planet"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60"></div>
+              <div className="h-48 bg-gradient-to-br from-mars-red to-mars-dark relative">
                 <div className="absolute bottom-4 left-4">
                   <div className="h-12 w-12 rounded-lg bg-mars-red flex items-center justify-center mb-1">
                     <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

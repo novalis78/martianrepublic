@@ -58,13 +58,9 @@ function SignInContent() {
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-mars-light to-white dark:from-mars-dark dark:to-black py-12 px-6">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center mb-6">
-          <Image 
-            src="/assets/mars-logo.png" 
-            alt="Mars Logo" 
-            width={80} 
-            height={80}
-            className="mx-auto"
-          />
+          <div className="mx-auto w-20 h-20 rounded-full bg-mars-red flex items-center justify-center text-white text-2xl font-bold">
+            MR
+          </div>
         </div>
         <h2 className="text-center text-3xl font-bold tracking-tight text-mars-red">
           Sign in to Martian Republic
