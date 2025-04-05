@@ -160,7 +160,7 @@ export default function PostDetailPage() {
         postId: post.id,
         userId: session?.user?.id || 'unknown',
         userName: session?.user?.name || 'Martian User',
-        userAvatar: session?.user?.image,
+        userAvatar: session?.user?.image || undefined,
         content: commentText,
         createdAt: new Date(),
       };
