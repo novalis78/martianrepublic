@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Generate a new seed phrase with specified word count
-    const seedPhrase = walletService.generateSeedPhrase(wordCount);
+    const seedPhrase = await walletService.generateSeedPhrase(wordCount);
     
     return NextResponse.json({
       success: true,

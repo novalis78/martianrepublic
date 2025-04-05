@@ -52,13 +52,13 @@ function mixInAdditionalEntropy(baseEntropy: Uint8Array): void {
   // Collect various browser/environment specific entropy sources
   const additionalData = [
     new Date().getTime(),                       // Current timestamp
-    performance.now(),                          // High-resolution timer
-    screen.width * screen.height,               // Screen dimensions
-    navigator.userAgent,                        // User agent string
-    JSON.stringify(navigator.hardwareConcurrency), // CPU core count
-    JSON.stringify(navigator.language),         // Language
-    JSON.stringify(navigator.languages),        // Languages array
-    JSON.stringify(navigator.plugins?.length)   // Plugins count
+    typeof performance !== 'undefined' ? performance.now() : 0,    // High-resolution timer
+    typeof screen !== 'undefined' ? (screen.width * screen.height) : 0,  // Screen dimensions
+    typeof navigator !== 'undefined' ? navigator.userAgent || '' : '',    // User agent string
+    typeof navigator !== 'undefined' ? JSON.stringify(navigator.hardwareConcurrency || 1) : '1', // CPU core count
+    typeof navigator !== 'undefined' ? JSON.stringify(navigator.language || 'en') : 'en',       // Language
+    typeof navigator !== 'undefined' ? JSON.stringify(navigator.languages || ['en']) : '["en"]', // Languages array
+    typeof navigator !== 'undefined' ? JSON.stringify(navigator.plugins?.length || 0) : '0'      // Plugins count
   ].join('');
   
   // Create a simple hash function for the additional data
@@ -77,25 +77,30 @@ function mixInAdditionalEntropy(baseEntropy: Uint8Array): void {
     baseEntropy[i] = baseEntropy[i] ^ hash[i]; 
   }
   
-  // Add a final entropy source: mouse movements
+  // Add a final entropy source: mouse movements (browser-only)
   // This is especially important for wallet generation
-  if (typeof document !== 'undefined') {
-    let mouseMovements = '';
-    const mouseMoveHandler = (e: MouseEvent) => {
-      mouseMovements += `${e.clientX},${e.clientY},${Date.now()};`;
-      if (mouseMovements.length > 1000) {
-        // Once we have enough mouse data, remove the listener
-        document.removeEventListener('mousemove', mouseMoveHandler);
-        
-        // Mix in the mouse movement data
-        const mouseHash = simpleHash(mouseMovements);
-        for (let i = 0; i < size; i++) {
-          baseEntropy[i] = baseEntropy[i] ^ mouseHash[i];
+  if (typeof document !== 'undefined' && typeof window !== 'undefined') {
+    try {
+      let mouseMovements = '';
+      const mouseMoveHandler = (e: MouseEvent) => {
+        mouseMovements += `${e.clientX},${e.clientY},${Date.now()};`;
+        if (mouseMovements.length > 1000) {
+          // Once we have enough mouse data, remove the listener
+          document.removeEventListener('mousemove', mouseMoveHandler);
+          
+          // Mix in the mouse movement data
+          const mouseHash = simpleHash(mouseMovements);
+          for (let i = 0; i < size; i++) {
+            baseEntropy[i] = baseEntropy[i] ^ mouseHash[i];
+          }
         }
-      }
-    };
-    
-    // Add the listener to collect mouse movements
-    document.addEventListener('mousemove', mouseMoveHandler);
+      };
+      
+      // Add the listener to collect mouse movements
+      document.addEventListener('mousemove', mouseMoveHandler);
+    } catch (error) {
+      // Ignore errors in non-browser environments
+      console.warn('Mouse movement entropy collection skipped:', error);
+    }
   }
 }

@@ -130,19 +130,25 @@ export class WalletService {
    * @param wordCount Number of words (12 or 24)
    * @returns A secure seed phrase
    */
-  generateSeedPhrase(wordCount: number = 12): string {
+  async generateSeedPhrase(wordCount: number = 12): Promise<string> {
     try {
-      // Import the entropy generator dynamically (only in browser)
-      const entropyModule = require('@/lib/wallet/entropyGenerator');
-      
-      // Determine entropy size based on word count (16 bytes for 12 words, 32 bytes for 24 words)
-      const entropySize = wordCount === 24 ? 32 : 16;
-      
-      // Generate strong entropy
-      const entropy = entropyModule.generateStrongEntropy(entropySize);
-      
-      // Generate mnemonic from entropy
-      return bip39.entropyToMnemonic(Buffer.from(entropy));
+      // Only try to import the entropy generator in browser environment
+      if (typeof window !== 'undefined') {
+        // Import the entropy generator dynamically
+        const entropyModule = await import('@/lib/wallet/entropyGenerator');
+        
+        // Determine entropy size based on word count (16 bytes for 12 words, 32 bytes for 24 words)
+        const entropySize = wordCount === 24 ? 32 : 16;
+        
+        // Generate strong entropy
+        const entropy = entropyModule.generateStrongEntropy(entropySize);
+        
+        // Generate mnemonic from entropy
+        return bip39.entropyToMnemonic(Buffer.from(entropy));
+      } else {
+        // Server-side fallback
+        throw new Error('Server-side entropy generation not supported');
+      }
     } catch (error) {
       console.warn('Enhanced entropy generation failed, falling back to default method:', error);
       // Fallback to standard generation method
