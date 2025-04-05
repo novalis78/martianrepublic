@@ -4,6 +4,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Card, Button, LoadingSpinner, ErrorBoundary, Badge } from '@/components/ui';
+import { useWallet } from '@/context/WalletContext';
+import SecurityTierIndicator from '@/components/wallet/SecurityTierIndicator';
+import UnlockModal from '@/components/wallet/UnlockModal';
+import ExportToMobileModal from '@/components/wallet/ExportToMobileModal';
+import WalletCard from '@/components/wallet/WalletCard';
 
 interface WalletData {
   balance: number;
@@ -25,6 +30,25 @@ function WalletContent() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // State for wallet unlock modal
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  
+  // State for export to mobile modal
+  const [showExportModal, setShowExportModal] = useState(false);
+  
+  // Get wallet context
+  const { 
+    isWalletStored, 
+    isSessionActive, 
+    publicAddress, 
+    securityTier, 
+    walletBalance,
+    encryptedWallet,
+    encryptedSeedPhrase,
+    reloadWalletData: reloadWalletContext
+  } = useWallet();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -33,7 +57,18 @@ function WalletContent() {
     } else if (status === 'unauthenticated') {
       setIsLoading(false);
     }
-  }, [status]);
+  }, [status, isSessionActive, publicAddress]);
+
+  // Set wallet data from context when available
+  useEffect(() => {
+    if (publicAddress && walletBalance !== null) {
+      setWalletData({
+        balance: walletBalance,
+        address: publicAddress,
+        txCount: transactions.length
+      });
+    }
+  }, [publicAddress, walletBalance, transactions.length]);
 
   const fetchWalletData = async () => {
     try {
@@ -70,6 +105,45 @@ function WalletContent() {
       ]);
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    }
+  };
+  
+  // Handle sensitive operations that require wallet unlock
+  const handleSensitiveOperation = (action: string) => {
+    if (!isSessionActive) {
+      setShowUnlockModal(true);
+      setPendingAction(action);
+    } else {
+      // Session is active, proceed with operation
+      executePendingAction(action);
+    }
+  };
+  
+  // Execute operation after wallet is unlocked
+  const executePendingAction = (action: string) => {
+    switch (action) {
+      case 'send':
+        setActiveTab('send');
+        break;
+      case 'export':
+        setShowExportModal(true);
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+    
+    // Reset pending action
+    setPendingAction(null);
+  };
+  
+  // Handle wallet unlock
+  const handleWalletUnlocked = (decryptedWallet: any) => {
+    // Reload wallet data
+    reloadWalletContext();
+    
+    // Execute pending action if there is one
+    if (pendingAction) {
+      executePendingAction(pendingAction);
     }
   };
 
@@ -204,10 +278,43 @@ function WalletContent() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="col-span-1 md:col-span-2">
+              {/* Security tier indicator */}
+              <SecurityTierIndicator 
+                securityTier={securityTier}
+                className="mb-6"
+              />
+              
+              {/* Balance card with Phobos-inspired design */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <WalletCard
+                  title="Available Balance"
+                  value={`${walletData?.balance || 0} MARS`}
+                  icon={
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                  trend="up"
+                  trendValue="3.5% this week"
+                  onClick={() => fetchWalletData()}
+                />
+                
+                <WalletCard
+                  title="Transaction Count"
+                  value={walletData?.txCount || 0}
+                  icon={
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  }
+                />
+              </div>
+              
+              {/* Wallet address with copy button */}
               <Card className="mb-6">
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Balance Overview</h2>
+                    <h2 className="text-lg font-semibold">Wallet Details</h2>
                     <Button
                       variant="ghost"
                       onClick={fetchWalletData}
@@ -220,18 +327,46 @@ function WalletContent() {
                       Refresh
                     </Button>
                   </div>
-                  <div className="flex flex-col">
-                    <div className="flex flex-col mb-4">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Available Balance</span>
-                      <span className="text-3xl font-bold">{walletData?.balance || 0} MARS</span>
-                    </div>
-                    <div className="flex flex-col mb-4">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Wallet Address</span>
-                      <span className="text-sm font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 break-all">
+                  
+                  <div className="flex flex-col mb-4">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Wallet Address</span>
+                    <div className="flex items-center">
+                      <span className="text-sm font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 break-all flex-grow">
                         {walletData?.address || session?.user?.publicAddress || 'No wallet connected'}
                       </span>
+                      <button 
+                        className="ml-2 p-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded"
+                        onClick={() => {
+                          if (walletData?.address) {
+                            navigator.clipboard.writeText(walletData.address);
+                            // In a real app, show a toast notification
+                            alert('Address copied to clipboard');
+                          }
+                        }}
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
+                  
+                  {isWalletStored && encryptedSeedPhrase && (
+                    <div className="mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSensitiveOperation('export')}
+                        leftIcon={
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        }
+                      >
+                        Export to Mobile Wallet
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -291,7 +426,7 @@ function WalletContent() {
                   <div className="flex flex-col space-y-2">
                     <Button 
                       variant="primary"
-                      onClick={() => setActiveTab('send')}
+                      onClick={() => handleSensitiveOperation('send')} 
                       fullWidth
                       leftIcon={
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -313,6 +448,20 @@ function WalletContent() {
                     >
                       Receive MARS
                     </Button>
+                    {isSessionActive && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => endSession()}
+                        fullWidth
+                        leftIcon={
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        }
+                      >
+                        Lock Wallet
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -554,6 +703,29 @@ function WalletContent() {
           </Card>
         )}
       </div>
+      
+      {/* Wallet Unlock Modal */}
+      {showUnlockModal && encryptedWallet && (
+        <UnlockModal
+          isOpen={showUnlockModal}
+          onClose={() => {
+            setShowUnlockModal(false);
+            setPendingAction(null);
+          }}
+          onUnlock={handleWalletUnlocked}
+          encryptedWallet={encryptedWallet}
+        />
+      )}
+      
+      {/* Export to Mobile Modal */}
+      {showExportModal && encryptedWallet && encryptedSeedPhrase && (
+        <ExportToMobileModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          encryptedWallet={encryptedWallet}
+          encryptedSeedPhrase={encryptedSeedPhrase}
+        />
+      )}
     </div>
   );
 }
