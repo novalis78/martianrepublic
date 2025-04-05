@@ -1,35 +1,79 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { Button, Input, Card, LoadingSpinner, ErrorBoundary } from '@/components/ui';
 
 function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/wallet/dashboard';
   const error = searchParams.get('error');
+  const success = searchParams.get('success');
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    rememberMe: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Set success message from URL parameter
+  useEffect(() => {
+    if (success) {
+      setSuccessMessage(decodeURIComponent(success).replace(/\+/g, ' '));
+    }
+  }, [success]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setFormError('');
+    setSuccessMessage('');
+    
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsLoading(true);
 
     try {
       const result = await signIn('credentials', {
@@ -42,6 +86,7 @@ function SignInContent() {
         throw new Error(result.error);
       }
 
+      // Redirect to callback URL or dashboard
       router.push(callbackUrl);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -71,59 +116,63 @@ function SignInContent() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-mars-dark py-8 px-6 shadow rounded-lg sm:px-10">
+        <Card className="py-8 px-6 sm:px-10">
           {(error || formError) && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded">
-              {error === 'CredentialsSignin' ? 'Invalid email or password' : formError || error}
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded">
+              {error === 'CredentialsSignin' 
+                ? 'Invalid email or password' 
+                : formError || error}
+            </div>
+          )}
+          
+          {successMessage && (
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded flex items-center">
+              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {successMessage}
             </div>
           )}
           
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-mars-red focus:ring-mars-red dark:bg-gray-800 dark:text-white sm:text-sm"
-                />
-              </div>
-            </div>
+            <Input
+              label="Email address"
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              error={fieldErrors.email}
+              disabled={isLoading}
+            />
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-mars-red focus:ring-mars-red dark:bg-gray-800 dark:text-white sm:text-sm"
-                />
-              </div>
-            </div>
+            <Input
+              label="Password"
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              error={fieldErrors.password}
+              disabled={isLoading}
+            />
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
-                  id="remember-me"
-                  name="remember-me"
+                  id="rememberMe"
+                  name="rememberMe"
                   type="checkbox"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
                   className="h-4 w-4 rounded border-gray-300 text-mars-red focus:ring-mars-red"
+                  disabled={isLoading}
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                   Remember me
                 </label>
               </div>
@@ -135,15 +184,15 @@ function SignInContent() {
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mars-red hover:bg-mars-red/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mars-red"
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </Button>
           </form>
 
           <div className="mt-6">
@@ -152,7 +201,7 @@ function SignInContent() {
                 <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-mars-dark text-gray-500">New to Mars?</span>
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">New to Mars?</span>
               </div>
             </div>
 
@@ -165,7 +214,7 @@ function SignInContent() {
               </Link>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -173,12 +222,14 @@ function SignInContent() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mars-red"></div>
-      </div>
-    }>
-      <SignInContent />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={
+        <div className="min-h-screen flex justify-center items-center">
+          <LoadingSpinner size="lg" color="primary" />
+        </div>
+      }>
+        <SignInContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

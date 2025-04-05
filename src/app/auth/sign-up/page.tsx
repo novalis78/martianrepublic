@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import { Button, Input, Card, LoadingSpinner, ErrorBoundary } from '@/components/ui';
 
 function SignUpContent() {
   const router = useRouter();
@@ -13,35 +13,73 @@ function SignUpContent() {
     email: '',
     password: '',
     confirmPassword: '',
+    agreeToTerms: false,
   });
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    // Check required fields
+    if (!formData.fullname.trim()) {
+      errors.fullname = 'Full name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (!formData.agreeToTerms) {
+      errors.agreeToTerms = 'You must agree to the terms to continue';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
-
+    setSuccessMessage('');
+    
     // Validate form
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
+    if (!validateForm()) {
       return;
     }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
-      setIsLoading(false);
-      return;
-    }
+    
+    setIsLoading(true);
 
     try {
       // Send registration request
@@ -54,6 +92,7 @@ function SignUpContent() {
           fullname: formData.fullname,
           email: formData.email,
           password: formData.password,
+          agreeToTerms: formData.agreeToTerms,
         }),
       });
 
@@ -65,6 +104,15 @@ function SignUpContent() {
 
       // Show success message
       setSuccessMessage('Account created successfully! Redirecting to login...');
+      
+      // Clear form
+      setFormData({
+        fullname: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        agreeToTerms: false,
+      });
       
       // Redirect to login page after a delay
       setTimeout(() => {
@@ -98,124 +146,117 @@ function SignUpContent() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-mars-dark py-8 px-6 shadow rounded-lg sm:px-10">
+        <Card className="py-8 px-6 sm:px-10">
           {error && (
-            <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded">
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded">
               {error}
             </div>
           )}
           
           {successMessage && (
-            <div className="mb-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded">
+            <div className="mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-3 rounded flex items-center">
+              <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               {successMessage}
             </div>
           )}
           
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Full name
-              </label>
-              <div className="mt-1">
+            <Input
+              label="Full name"
+              id="fullname"
+              name="fullname"
+              type="text"
+              autoComplete="name"
+              required
+              value={formData.fullname}
+              onChange={handleChange}
+              error={fieldErrors.fullname}
+              disabled={isLoading}
+            />
+
+            <Input
+              label="Email address"
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              error={fieldErrors.email}
+              disabled={isLoading}
+            />
+
+            <Input
+              label="Password"
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              error={fieldErrors.password}
+              helperText="Password must be at least 8 characters"
+              disabled={isLoading}
+            />
+
+            <Input
+              label="Confirm Password"
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              error={fieldErrors.confirmPassword}
+              disabled={isLoading}
+            />
+
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
                 <input
-                  id="fullname"
-                  name="fullname"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  value={formData.fullname}
+                  id="agreeToTerms"
+                  name="agreeToTerms"
+                  type="checkbox"
+                  checked={formData.agreeToTerms}
                   onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-mars-red focus:ring-mars-red dark:bg-gray-800 dark:text-white sm:text-sm"
+                  className="h-4 w-4 rounded border-gray-300 text-mars-red focus:ring-mars-red"
+                  aria-invalid={fieldErrors.agreeToTerms ? 'true' : 'false'}
+                  disabled={isLoading}
                 />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="agreeToTerms" className="font-medium text-gray-700 dark:text-gray-300">
+                  I agree to the{' '}
+                  <Link href="/terms" className="text-mars-red hover:text-mars-red/80">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" className="text-mars-red hover:text-mars-red/80">
+                    Privacy Policy
+                  </Link>
+                </label>
+                {fieldErrors.agreeToTerms && (
+                  <p className="text-red-600 dark:text-red-400 mt-1">
+                    {fieldErrors.agreeToTerms}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-mars-red focus:ring-mars-red dark:bg-gray-800 dark:text-white sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-mars-red focus:ring-mars-red dark:bg-gray-800 dark:text-white sm:text-sm"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Password must be at least 8 characters
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Confirm Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-mars-red focus:ring-mars-red dark:bg-gray-800 dark:text-white sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                required
-                className="h-4 w-4 rounded border-gray-300 text-mars-red focus:ring-mars-red"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                I agree to the{' '}
-                <Link href="/terms" className="font-medium text-mars-red hover:text-mars-red/80">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="font-medium text-mars-red hover:text-mars-red/80">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-mars-red hover:bg-mars-red/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mars-red"
-              >
-                {isLoading ? 'Creating account...' : 'Create account'}
-              </button>
-            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating account...' : 'Create account'}
+            </Button>
           </form>
 
           <div className="mt-6 text-center">
@@ -226,7 +267,7 @@ function SignUpContent() {
               </Link>
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -234,12 +275,14 @@ function SignUpContent() {
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-mars-red"></div>
-      </div>
-    }>
-      <SignUpContent />
-    </Suspense>
+    <ErrorBoundary>
+      <Suspense fallback={
+        <div className="min-h-screen flex justify-center items-center">
+          <LoadingSpinner size="lg" color="primary" />
+        </div>
+      }>
+        <SignUpContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
