@@ -530,7 +530,7 @@ export default function PlanetPageComponent() {
                         </li>
                         <li className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Surface pressure:</span>
-                          <span className="font-medium">0.636 kPa (< 1% Earth)</span>
+                          <span className="font-medium">0.636 kPa (&lt; 1% Earth)</span>
                         </li>
                         <li className="flex justify-between">
                           <span className="text-gray-600 dark:text-gray-400">Temperature range:</span>

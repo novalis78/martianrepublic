@@ -319,7 +319,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold mb-4">Join the Martian Republic Today</h2>
           <p className="max-w-2xl mx-auto text-lg mb-8">
-            Be part of humanity's greatest adventure. Create your account and begin your journey to Martian citizenship.
+            Be part of humanity&apos;s greatest adventure. Create your account and begin your journey to Martian citizenship.
           </p>
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <Link

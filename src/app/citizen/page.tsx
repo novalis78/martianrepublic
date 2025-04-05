@@ -220,7 +220,7 @@ export default function CitizenPage() {
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Please be patient while your application is being reviewed. You will be notified once there's an update to your application status.
+                    Please be patient while your application is being reviewed. You will be notified once there&apos;s an update to your application status.
                   </p>
                 </div>
               ) : (

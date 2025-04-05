@@ -239,7 +239,7 @@ export default function PostDetailPage() {
       <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
         <h1 className="text-3xl font-bold mb-6 text-center">Post Not Found</h1>
         <p className="mb-6 text-center max-w-md">
-          The post you're looking for doesn't exist or has been removed.
+          The post you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
         <Link
           href="/feed"

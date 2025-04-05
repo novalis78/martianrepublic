@@ -451,7 +451,7 @@ export default function FeedPage() {
                   onClick={() => setShowPostModal(true)}
                   className="ml-3 bg-gray-100 dark:bg-gray-800 rounded-full px-4 py-2 text-gray-500 dark:text-gray-400 text-left flex-grow"
                 >
-                  What's happening on Mars?
+                  What&apos;s happening on Mars?
                 </button>
               </div>
             </div>
