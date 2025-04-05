@@ -2,9 +2,10 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, Button } from '@/components/ui';
+import { Suspense } from 'react';
+import { Card, Button, LoadingSpinner } from '@/components/ui';
 
-export default function ErrorPage() {
+function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -72,5 +73,17 @@ export default function ErrorPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" color="primary" />
+      </div>
+    }>
+      <ErrorContent />
+    </Suspense>
   );
 }
