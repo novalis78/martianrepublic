@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { decryptWalletData } from '@/lib/wallet/secureStorage';
 
 interface ExportToMobileModalProps {
@@ -146,14 +147,28 @@ const ExportToMobileModal: React.FC<ExportToMobileModalProps> = ({
                 Scan this QR code with the Martian mobile wallet app to import your wallet
               </p>
               
-              {/* In a real implementation, this would be a proper QR code component */}
               <div className="bg-white p-4 mx-auto w-64 h-64 flex items-center justify-center border-2 border-gray-300 rounded-lg">
-                <div className="text-sm text-gray-500 text-center">
-                  {/* This would be replaced with an actual QR code */}
-                  [QR Code Placeholder]
-                  <br />
-                  Containing your seed phrase
-                </div>
+                {qrData ? (
+                  <QRCodeSVG
+                    value={qrData}
+                    size={220}
+                    level="H" // High error correction level
+                    fgColor="#1c0d10" // Mars-themed dark red
+                    bgColor="#FFFFFF"
+                    imageSettings={{
+                      src: "/assets/mars-logo.svg",
+                      x: undefined,
+                      y: undefined,
+                      height: 24,
+                      width: 24,
+                      excavate: true,
+                    }}
+                  />
+                ) : (
+                  <div className="text-sm text-gray-500 text-center">
+                    Error generating QR code
+                  </div>
+                )}
               </div>
             </div>
             

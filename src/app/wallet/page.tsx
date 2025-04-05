@@ -8,7 +8,9 @@ import { useWallet } from '@/context/WalletContext';
 import SecurityTierIndicator from '@/components/wallet/SecurityTierIndicator';
 import UnlockModal from '@/components/wallet/UnlockModal';
 import ExportToMobileModal from '@/components/wallet/ExportToMobileModal';
+import TransactionModal from '@/components/wallet/TransactionModal';
 import WalletCard from '@/components/wallet/WalletCard';
+import { isValidAddress } from '@/lib/wallet/transactionService';
 
 interface WalletData {
   balance: number;
@@ -37,6 +39,14 @@ function WalletContent() {
   
   // State for export to mobile modal
   const [showExportModal, setShowExportModal] = useState(false);
+  
+  // State for transaction form and modal
+  const [recipientAddress, setRecipientAddress] = useState('');
+  const [sendAmount, setSendAmount] = useState('');
+  const [transactionNote, setTransactionNote] = useState('');
+  const [addressError, setAddressError] = useState('');
+  const [amountError, setAmountError] = useState('');
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
   
   // Get wallet context
   const { 
@@ -129,6 +139,9 @@ function WalletContent() {
       case 'export':
         setShowExportModal(true);
         break;
+      case 'sendTransaction':
+        setShowTransactionModal(true);
+        break;
       default:
         console.log('Unknown action:', action);
     }
@@ -146,6 +159,70 @@ function WalletContent() {
     if (pendingAction) {
       executePendingAction(pendingAction);
     }
+  };
+  
+  // Validate transaction form
+  const validateTransactionForm = () => {
+    let isValid = true;
+    setAddressError('');
+    setAmountError('');
+    
+    // Validate address
+    if (!recipientAddress) {
+      setAddressError('Recipient address is required');
+      isValid = false;
+    } else if (!isValidAddress(recipientAddress)) {
+      setAddressError('Invalid Marscoin address');
+      isValid = false;
+    }
+    
+    // Validate amount
+    if (!sendAmount) {
+      setAmountError('Amount is required');
+      isValid = false;
+    } else {
+      const amount = parseFloat(sendAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setAmountError('Amount must be greater than zero');
+        isValid = false;
+      } else if (walletData && amount > walletData.balance) {
+        setAmountError('Insufficient balance');
+        isValid = false;
+      }
+    }
+    
+    return isValid;
+  };
+  
+  // Handle transaction form submission
+  const handleSendFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validateTransactionForm()) {
+      // If form is valid, prompt for wallet password
+      handleSensitiveOperation('sendTransaction');
+    }
+  };
+  
+  // Handle transaction completion
+  const handleTransactionComplete = (txid: string) => {
+    setShowTransactionModal(false);
+    
+    // Reset form
+    setRecipientAddress('');
+    setSendAmount('');
+    setTransactionNote('');
+    
+    // Refresh wallet data
+    fetchWalletData();
+    fetchTransactions();
+    
+    // Show success message or notification
+    alert(`Transaction submitted! Transaction ID: ${txid}`);
+    
+    // In a real app, you would use a toast notification
+    // and redirect to the transaction tab
+    setActiveTab('transactions');
   };
 
   if (status === 'loading' || isLoading) {
@@ -509,7 +586,7 @@ function WalletContent() {
             <div className="p-6">
               <h2 className="text-xl font-semibold mb-6">Send MARS</h2>
               
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSendFormSubmit}>
                 <div>
                   <label htmlFor="recipient" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Recipient Address
@@ -517,9 +594,20 @@ function WalletContent() {
                   <input
                     type="text"
                     id="recipient"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                    className={`w-full px-3 py-2 border ${addressError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:text-white`}
                     placeholder="Enter MARS address"
+                    value={recipientAddress}
+                    onChange={(e) => {
+                      setRecipientAddress(e.target.value);
+                      if (addressError) setAddressError('');
+                    }}
+                    required
                   />
+                  {addressError && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {addressError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -530,15 +618,27 @@ function WalletContent() {
                     <input
                       type="number"
                       id="amount"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                      className={`w-full px-3 py-2 border ${amountError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-gray-700'} rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:text-white`}
                       placeholder="0.00"
                       min="0.001"
                       step="0.001"
+                      value={sendAmount}
+                      onChange={(e) => {
+                        setSendAmount(e.target.value);
+                        if (amountError) setAmountError('');
+                      }}
+                      required
                     />
                   </div>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Available balance: {walletData?.balance || 0} MARS
-                  </p>
+                  {amountError ? (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                      {amountError}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Available balance: {walletData?.balance || 0} MARS
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -550,10 +650,33 @@ function WalletContent() {
                     id="note"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                     placeholder="Add a note to this transaction"
+                    value={transactionNote}
+                    onChange={(e) => setTransactionNote(e.target.value)}
                   />
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     This note will be stored on the blockchain
                   </p>
+                </div>
+
+                <div className="bg-[#1c0d10]/10 dark:bg-[#2d1216]/20 p-4 rounded-lg border border-mars-red/20">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="h-5 w-5 text-mars-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">Transaction Security</h3>
+                      <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                        <p>You'll need to enter your wallet password to confirm this transaction.</p>
+                        {securityTier === 'basic' && (
+                          <p className="mt-1 text-amber-700 dark:text-amber-400">
+                            Consider using the Martian mobile app for enhanced security.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <Button
@@ -561,7 +684,7 @@ function WalletContent() {
                   variant="primary"
                   fullWidth
                 >
-                  Send MARS
+                  Continue to Confirm
                 </Button>
               </form>
             </div>
@@ -725,6 +848,20 @@ function WalletContent() {
           onClose={() => setShowExportModal(false)}
           encryptedWallet={encryptedWallet}
           encryptedSeedPhrase={encryptedSeedPhrase}
+        />
+      )}
+      
+      {/* Transaction Modal */}
+      {showTransactionModal && encryptedWallet && publicAddress && (
+        <TransactionModal
+          isOpen={showTransactionModal}
+          onClose={() => setShowTransactionModal(false)}
+          encryptedWallet={encryptedWallet}
+          publicAddress={publicAddress}
+          recipient={recipientAddress}
+          amount={parseFloat(sendAmount)}
+          note={transactionNote || undefined}
+          onComplete={handleTransactionComplete}
         />
       )}
     </div>
