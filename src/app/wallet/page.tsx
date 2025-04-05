@@ -668,7 +668,7 @@ function WalletContent() {
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200">Transaction Security</h3>
                       <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                        <p>You'll need to enter your wallet password to confirm this transaction.</p>
+                        <p>You&apos;ll need to enter your wallet password to confirm this transaction.</p>
                         {securityTier === 'basic' && (
                           <p className="mt-1 text-amber-700 dark:text-amber-400">
                             Consider using the Martian mobile app for enhanced security.
