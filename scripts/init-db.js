@@ -1,7 +1,12 @@
 // Initialize MongoDB database for Martian Republic
 // Usage: node scripts/init-db.js
 // Make sure MONGODB_URI and MONGODB_DB environment variables are set
-// or create a .env file in the root directory
+// or create a .env.local file in the root directory with:
+//
+// MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/martianrepublic?retryWrites=true&w=majority
+// MONGODB_DB=martianrepublic
+//
+// Note: MongoDB Atlas may have IP restrictions - ensure your IP is whitelisted in the Atlas dashboard
 
 const { MongoClient } = require('mongodb');
 const path = require('path');
