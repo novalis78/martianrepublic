@@ -21,13 +21,6 @@ export default function Home() {
               alt="Martian Republic Seal" 
               width={200} 
               height={200}
-              className="mb-6"
-            />
-            <Image 
-              src="/assets/mars-logo.svg" 
-              alt="Mars Logo" 
-              width={120} 
-              height={120}
               className="animate-pulse"
             />
           </div>
