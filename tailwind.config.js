@@ -9,6 +9,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Legacy color aliases (for backward compatibility)
+        'mars-red': '#c1440e',
+        'mars-dust': '#d8a172',
+        'mars-dark': '#2c1b0e',
+        'mars-light': '#f9e7d2',
+
         // Core Mars palette - warm, dusty, authoritative
         mars: {
           50: '#fef7f0',
