@@ -1,21 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import Image from 'next/image';
 
 interface Proposal {
   id: string;
   title: string;
   description: string;
-  proposedBy: string;
-  status: 'voting' | 'passed' | 'rejected' | 'expired';
+  content: string;
+  category: string;
+  status: 'submitted' | 'voting' | 'passed' | 'rejected' | 'expired';
   yesVotes: number;
   noVotes: number;
+  abstainVotes: number;
   totalVotes: number;
-  endsAt: Date;
-  createdAt: Date;
+  yesPercent: number;
+  noPercent: number;
+  threshold: number;
+  expiresAt: string;
+  createdAt: string;
 }
 
 export default function CongressPage() {
@@ -24,67 +28,138 @@ export default function CongressPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [showNewProposalModal, setShowNewProposalModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [votingProposal, setVotingProposal] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Form state for new proposal
+  const [newProposal, setNewProposal] = useState({
+    title: '',
+    content: '',
+    category: '',
+    duration: 14,
+    agreedToTerms: false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchProposals = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch('/api/congress/proposals');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch proposals');
+      }
+
+      const data = await response.json();
+      setProposals(data.proposals || []);
+    } catch (err) {
+      console.error('Error fetching proposals:', err);
+      setError('Failed to load proposals. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // In a real implementation, we would fetch proposals from an API
-    const mockProposals: Proposal[] = [
-      {
-        id: '1',
-        title: 'Implement Resource Sharing Protocol',
-        description: 'Create a standard protocol for fair distribution of Martian resources among citizens.',
-        proposedBy: 'John Doe',
-        status: 'voting',
-        yesVotes: 45,
-        noVotes: 55,
-        totalVotes: 100,
-        endsAt: new Date('2025-04-15'),
-        createdAt: new Date('2025-04-01'),
-      },
-      {
-        id: '2',
-        title: 'Expansion of Olympus City',
-        description: 'Approve funding for the expansion of residential zones in Olympus City.',
-        proposedBy: 'Jane Smith',
-        status: 'voting',
-        yesVotes: 72,
-        noVotes: 18,
-        totalVotes: 90,
-        endsAt: new Date('2025-04-12'),
-        createdAt: new Date('2025-03-29'),
-      },
-      {
-        id: '3',
-        title: 'Mars-Earth Trade Agreement',
-        description: 'Establish formal trade relations with Earth-based organizations.',
-        proposedBy: 'Robert Johnson',
-        status: 'passed',
-        yesVotes: 88,
-        noVotes: 12,
-        totalVotes: 100,
-        endsAt: new Date('2025-03-30'),
-        createdAt: new Date('2025-03-15'),
-      },
-      {
-        id: '4',
-        title: 'Educational Curriculum Standards',
-        description: 'Set mandatory educational standards for Martian schools.',
-        proposedBy: 'Alice Williams',
-        status: 'rejected',
-        yesVotes: 35,
-        noVotes: 65,
-        totalVotes: 100,
-        endsAt: new Date('2025-03-28'),
-        createdAt: new Date('2025-03-14'),
-      },
-    ];
+    if (authStatus === 'authenticated') {
+      fetchProposals();
+    } else if (authStatus === 'unauthenticated') {
+      setIsLoading(false);
+    }
+  }, [authStatus, fetchProposals]);
 
-    setProposals(mockProposals);
-    setIsLoading(false);
-  }, []);
+  const handleVote = async (proposalId: string, vote: 'Y' | 'N' | 'A') => {
+    try {
+      setVotingProposal(proposalId);
+      setError(null);
+
+      const response = await fetch('/api/congress/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proposalId, vote }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit vote');
+      }
+
+      // Update the proposal in our local state with new vote counts
+      setProposals(prev => prev.map(p => {
+        if (p.id === proposalId) {
+          return {
+            ...p,
+            yesVotes: data.counts.yesVotes,
+            noVotes: data.counts.noVotes,
+            abstainVotes: data.counts.abstainVotes,
+            totalVotes: data.counts.totalVotes,
+            yesPercent: data.counts.yesPercent,
+            noPercent: data.counts.noPercent,
+          };
+        }
+        return p;
+      }));
+
+      setSuccessMessage('Your vote has been recorded!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit vote');
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setVotingProposal(null);
+    }
+  };
+
+  const handleCreateProposal = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newProposal.title || !newProposal.content || !newProposal.agreedToTerms) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const response = await fetch('/api/congress/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newProposal.title,
+          content: newProposal.content,
+          category: newProposal.category || 'general',
+          duration: newProposal.duration,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create proposal');
+      }
+
+      // Refresh proposals
+      await fetchProposals();
+
+      // Reset form and close modal
+      setNewProposal({ title: '', content: '', category: '', duration: 14, agreedToTerms: false });
+      setShowNewProposalModal(false);
+      setSuccessMessage('Proposal created successfully!');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to create proposal');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const getFilteredProposals = () => {
     if (activeTab === 'active') {
-      return proposals.filter(p => p.status === 'voting');
+      return proposals.filter(p => p.status === 'voting' || p.status === 'submitted');
     } else if (activeTab === 'passed') {
       return proposals.filter(p => p.status === 'passed');
     } else if (activeTab === 'rejected') {
@@ -94,6 +169,10 @@ export default function CongressPage() {
   };
 
   const canCreateProposal = () => {
+    return session?.user?.citizenStatus === 'citizen';
+  };
+
+  const canVote = () => {
     return session?.user?.citizenStatus === 'citizen';
   };
 
@@ -108,6 +187,25 @@ export default function CongressPage() {
   return (
     <div className="p-8">
       <div className="max-w-6xl mx-auto">
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="mb-6 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-4 rounded-lg flex items-center">
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            {successMessage}
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg flex items-center">
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {error}
+          </div>
+        )}
+
         <h1 className="text-3xl font-bold mb-2">Martian Congress</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8">
           Shape the future of Mars through democratic governance and collective decision-making.
@@ -257,42 +355,70 @@ export default function CongressPage() {
                             {proposal.description}
                           </p>
                           
-                          {proposal.status === 'voting' && (
+                          {(proposal.status === 'voting' || proposal.status === 'submitted') && (
                             <div className="mb-4">
                               <div className="flex justify-between text-sm mb-1">
-                                <span>Yes: {proposal.yesVotes}%</span>
-                                <span>No: {proposal.noVotes}%</span>
+                                <span className="text-green-600 dark:text-green-400">Yes: {proposal.yesPercent || 0}%</span>
+                                <span className="text-red-600 dark:text-red-400">No: {proposal.noPercent || 0}%</span>
                               </div>
-                              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-green-500 rounded-full"
-                                  style={{ width: `${proposal.yesVotes}%` }}
+                              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
+                                <div
+                                  className="h-full bg-green-500"
+                                  style={{ width: `${proposal.yesPercent || 0}%` }}
+                                ></div>
+                                <div
+                                  className="h-full bg-red-500"
+                                  style={{ width: `${proposal.noPercent || 0}%` }}
                                 ></div>
                               </div>
                               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                {proposal.totalVotes} votes • Ends {new Date(proposal.endsAt).toLocaleDateString()}
+                                {proposal.totalVotes || 0} votes • Needs {proposal.threshold || 51}% to pass • Ends {new Date(proposal.expiresAt).toLocaleDateString()}
                               </div>
                             </div>
                           )}
-                          
+
                           <div className="flex justify-between items-center">
                             <div className="text-sm text-gray-500 dark:text-gray-400">
-                              Proposed by {proposal.proposedBy} • {new Date(proposal.createdAt).toLocaleDateString()}
+                              <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs mr-2">
+                                {proposal.category || 'general'}
+                              </span>
+                              {new Date(proposal.createdAt).toLocaleDateString()}
                             </div>
                             
-                            {proposal.status === 'voting' && session?.user?.citizenStatus === 'citizen' && (
+                            {(proposal.status === 'voting' || proposal.status === 'submitted') && canVote() && (
                               <div className="flex space-x-2">
-                                <button className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 text-sm font-medium">
-                                  Vote Yes
+                                <button
+                                  onClick={() => handleVote(proposal.id, 'Y')}
+                                  disabled={votingProposal === proposal.id}
+                                  className="px-3 py-1 bg-green-100 text-green-800 rounded-md hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-800 text-sm font-medium disabled:opacity-50"
+                                >
+                                  {votingProposal === proposal.id ? '...' : 'Yes'}
                                 </button>
-                                <button className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 text-sm font-medium">
-                                  Vote No
+                                <button
+                                  onClick={() => handleVote(proposal.id, 'N')}
+                                  disabled={votingProposal === proposal.id}
+                                  className="px-3 py-1 bg-red-100 text-red-800 rounded-md hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 text-sm font-medium disabled:opacity-50"
+                                >
+                                  {votingProposal === proposal.id ? '...' : 'No'}
+                                </button>
+                                <button
+                                  onClick={() => handleVote(proposal.id, 'A')}
+                                  disabled={votingProposal === proposal.id}
+                                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 text-sm font-medium disabled:opacity-50"
+                                >
+                                  {votingProposal === proposal.id ? '...' : 'Abstain'}
                                 </button>
                               </div>
                             )}
-                            
-                            {proposal.status !== 'voting' && (
-                              <Link 
+
+                            {(proposal.status === 'voting' || proposal.status === 'submitted') && !canVote() && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 italic">
+                                Citizens only
+                              </span>
+                            )}
+
+                            {proposal.status !== 'voting' && proposal.status !== 'submitted' && (
+                              <Link
                                 href={`/congress/proposals/${proposal.id}`}
                                 className="text-sm text-mars-red hover:text-mars-red/80"
                               >
@@ -353,7 +479,7 @@ export default function CongressPage() {
                       Create New Proposal
                     </h3>
                     
-                    <form className="space-y-4">
+                    <form className="space-y-4" onSubmit={handleCreateProposal}>
                       <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Title
@@ -361,36 +487,48 @@ export default function CongressPage() {
                         <input
                           type="text"
                           id="title"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700"
+                          value={newProposal.title}
+                          onChange={(e) => setNewProposal(prev => ({ ...prev, title: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                           placeholder="Proposal title..."
+                          required
+                          disabled={isSubmitting}
                         />
                       </div>
-                      
+
                       <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Description
+                        <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Content
                         </label>
                         <textarea
-                          id="description"
+                          id="content"
                           rows={4}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700"
-                          placeholder="Describe your proposal..."
+                          value={newProposal.content}
+                          onChange={(e) => setNewProposal(prev => ({ ...prev, content: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          placeholder="Describe your proposal in detail..."
+                          required
+                          disabled={isSubmitting}
                         ></textarea>
                       </div>
-                      
+
                       <div>
                         <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Category
                         </label>
                         <select
                           id="category"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700"
+                          value={newProposal.category}
+                          onChange={(e) => setNewProposal(prev => ({ ...prev, category: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          disabled={isSubmitting}
                         >
                           <option value="">Select a category</option>
+                          <option value="constitutional">Constitutional</option>
                           <option value="governance">Governance</option>
-                          <option value="economics">Economics</option>
+                          <option value="economic">Economics</option>
                           <option value="infrastructure">Infrastructure</option>
-                          <option value="resources">Resources</option>
+                          <option value="safety">Safety</option>
                           <option value="social">Social</option>
                           <option value="science">Science & Education</option>
                         </select>
@@ -405,17 +543,23 @@ export default function CongressPage() {
                           id="votingPeriod"
                           min="1"
                           max="30"
-                          defaultValue="14"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700"
+                          value={newProposal.duration}
+                          onChange={(e) => setNewProposal(prev => ({ ...prev, duration: parseInt(e.target.value) || 14 }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-mars-red focus:border-mars-red dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                          disabled={isSubmitting}
                         />
                       </div>
-                      
+
                       <div className="flex items-start">
                         <div className="flex items-center h-5">
                           <input
                             id="terms"
                             type="checkbox"
+                            checked={newProposal.agreedToTerms}
+                            onChange={(e) => setNewProposal(prev => ({ ...prev, agreedToTerms: e.target.checked }))}
                             className="h-4 w-4 text-mars-red focus:ring-mars-red border-gray-300 rounded"
+                            disabled={isSubmitting}
+                            required
                           />
                         </div>
                         <div className="ml-3 text-sm">
@@ -424,24 +568,30 @@ export default function CongressPage() {
                           </label>
                         </div>
                       </div>
+
+                      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg -mx-4 -mb-4 mt-6">
+                        <button
+                          type="submit"
+                          disabled={isSubmitting || !newProposal.agreedToTerms}
+                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-mars-red text-base font-medium text-white hover:bg-mars-red/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mars-red sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isSubmitting ? 'Submitting...' : 'Submit Proposal'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowNewProposalModal(false);
+                            setNewProposal({ title: '', content: '', category: '', duration: 14, agreedToTerms: false });
+                          }}
+                          disabled={isSubmitting}
+                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-700 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mars-red sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </form>
                   </div>
                 </div>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-mars-red text-base font-medium text-white hover:bg-mars-red/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mars-red sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Submit Proposal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowNewProposalModal(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-700 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-mars-red sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Cancel
-                </button>
               </div>
             </div>
           </div>
