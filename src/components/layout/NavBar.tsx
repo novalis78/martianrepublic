@@ -4,17 +4,40 @@ import { useState, useRef, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { useTheme } from '@/context/ThemeContext'
+
+// Navigation items configuration
+const navItems = [
+  { href: '/wallet', label: 'Wallet', shortLabel: 'WLT' },
+  { href: '/citizen', label: 'Citizen', shortLabel: 'CTZ' },
+  { href: '/congress', label: 'Congress', shortLabel: 'CON' },
+  { href: '/feed', label: 'Feed', shortLabel: 'FED' },
+  { href: '/logbook', label: 'Logbook', shortLabel: 'LOG' },
+  { href: '/inventory', label: 'Inventory', shortLabel: 'INV' },
+  { href: '/planet', label: 'Planet', shortLabel: 'PLN' },
+]
 
 export default function NavBar() {
   const { data: session, status } = useSession()
   const isAuthenticated = status === 'authenticated'
   const { theme, toggleTheme } = useTheme()
-  
+  const pathname = usePathname()
+
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  
+  const [isScrolled, setIsScrolled] = useState(false)
+
   const profileRef = useRef<HTMLDivElement>(null)
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -23,7 +46,7 @@ export default function NavBar() {
         setIsProfileOpen(false)
       }
     }
-    
+
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
@@ -33,267 +56,274 @@ export default function NavBar() {
   // Get citizen status badge
   const getCitizenStatusBadge = () => {
     if (!session?.user?.citizenStatus) return null
-    
-    const status = session.user?.citizenStatus
-    
-    if (status === 'citizen') {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          Citizen
-        </span>
-      )
-    } else if (status === 'general_public') {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-          General Public
-        </span>
-      )
-    } else if (status === 'applicant') {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-          Applicant
-        </span>
-      )
-    } else {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-          Newcomer
-        </span>
-      )
+
+    const citizenStatus = session.user?.citizenStatus
+
+    const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+      citizen: { bg: 'bg-colony-green/20 border-colony-green/30', text: 'text-colony-green', label: 'CITIZEN' },
+      general_public: { bg: 'bg-colony-cyan/20 border-colony-cyan/30', text: 'text-colony-cyan', label: 'PUBLIC' },
+      applicant: { bg: 'bg-colony-amber/20 border-colony-amber/30', text: 'text-colony-amber', label: 'APPLICANT' },
     }
+
+    const config = statusConfig[citizenStatus] || {
+      bg: 'bg-void-600/50 border-void-500',
+      text: 'text-void-300',
+      label: 'NEWCOMER'
+    }
+
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 text-2xs font-mono uppercase tracking-wider border ${config.bg} ${config.text}`}>
+        {config.label}
+      </span>
+    )
   }
 
   return (
-    <nav className="bg-white shadow-md dark:bg-mars-dark">
-      <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
-        <div className="relative flex h-16 items-center justify-between">
-          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-            {/* Mobile menu button*/}
-            <button
-              type="button"
-              className="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-mars-dark dark:hover:text-white"
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <span className="absolute -inset-0.5"></span>
-              <span className="sr-only">Open main menu</span>
-              {!isMenuOpen ? (
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                </svg>
-              ) : (
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-            </button>
-          </div>
-          <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-            <div className="flex flex-shrink-0 items-center">
-              <Link href="/" className="flex items-center">
-                <Image 
-                  src="/assets/mars-logo.svg" 
-                  alt="Mars Logo" 
-                  width={32} 
-                  height={32}
-                  className="mr-2"
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? 'bg-void-900/95 backdrop-blur-md border-b border-white/5'
+          : 'bg-transparent'
+      }`}
+    >
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-mars-rust/50 to-transparent" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-16">
+          {/* Left section - Logo & Nav */}
+          <div className="flex items-center gap-8">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative w-8 h-8">
+                <Image
+                  src="/assets/mars-logo.svg"
+                  alt="Mars Logo"
+                  fill
+                  className="object-contain transition-transform duration-300 group-hover:scale-110"
                 />
-                <span className="text-xl font-bold text-mars-red">Martian Republic</span>
-              </Link>
-            </div>
-            <div className="hidden sm:ml-6 sm:block">
-              <div className="flex space-x-4">
-                <Link href="/wallet" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Wallet
-                </Link>
-                <Link href="/citizen" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Citizen
-                </Link>
-                <Link href="/congress" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Congress
-                </Link>
-                <Link href="/feed" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Feed
-                </Link>
-                <Link href="/logbook" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Logbook
-                </Link>
-                <Link href="/inventory" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Inventory
-                </Link>
-                <Link href="/planet" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-mars-red dark:text-white">
-                  Planet
-                </Link>
+              </div>
+              <div className="hidden sm:flex flex-col">
+                <span className="font-display text-sm font-semibold text-void-100 leading-none">
+                  MARTIAN
+                </span>
+                <span className="font-display text-xs text-mars-rust leading-none">
+                  REPUBLIC
+                </span>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center">
+              {/* Nav container with subtle border */}
+              <div className="flex items-center gap-1 px-2 py-1 bg-void-800/30 border border-white/5 rounded-sm">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`relative px-3 py-1.5 font-display text-xs uppercase tracking-wider transition-all duration-200 ${
+                        isActive
+                          ? 'text-mars-dust bg-mars-rust/20'
+                          : 'text-void-300 hover:text-void-100 hover:bg-white/5'
+                      }`}
+                    >
+                      {/* Active indicator */}
+                      {isActive && (
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-px bg-mars-rust" />
+                      )}
+                      <span className="hidden xl:inline">{item.label}</span>
+                      <span className="xl:hidden">{item.shortLabel}</span>
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           </div>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            {/* Theme toggle button */}
+
+          {/* Right section - Theme toggle & Auth */}
+          <div className="flex items-center gap-3">
+            {/* Theme toggle */}
             <button
-              type="button"
-              className="relative p-1 mr-3 rounded-full text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-white"
               onClick={toggleTheme}
+              className="relative p-2 text-void-400 hover:text-void-200 transition-colors"
+              aria-label="Toggle theme"
             >
-              <span className="sr-only">Toggle theme</span>
-              {theme === 'dark' ? (
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-                </svg>
-              ) : (
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
-                </svg>
-              )}
+              <div className="relative w-5 h-5">
+                {theme === 'dark' ? (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                  </svg>
+                )}
+              </div>
             </button>
-            
+
+            {/* Auth section */}
             {isAuthenticated ? (
               <div className="relative" ref={profileRef}>
                 <button
-                  type="button"
-                  className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-mars-red focus:ring-offset-2 dark:bg-gray-800"
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-3 px-3 py-1.5 bg-void-800/50 border border-white/5 hover:border-mars-rust/30 transition-all duration-200 group"
                 >
-                  <span className="absolute -inset-1.5"></span>
-                  <span className="sr-only">Open user menu</span>
-                  <div className="flex items-center space-x-2 border border-gray-300 dark:border-gray-700 rounded-full pl-2 pr-3 py-1">
-                    <div className="h-8 w-8 rounded-full bg-mars-red flex items-center justify-center text-white">
-                      {session?.user?.name ? session.user?.name.charAt(0).toUpperCase() : '?'}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {session?.user?.name || 'Martian User'}
-                      </span>
-                      <div>
-                        {getCitizenStatusBadge()}
-                      </div>
+                  {/* Avatar */}
+                  <div className="relative w-7 h-7 bg-gradient-to-br from-mars-rust to-mars-oxide rounded-sm flex items-center justify-center">
+                    <span className="font-display text-xs font-bold text-white">
+                      {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : '?'}
+                    </span>
+                    {/* Online indicator */}
+                    <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-colony-green rounded-full border border-void-900" />
+                  </div>
+
+                  {/* User info */}
+                  <div className="hidden sm:flex flex-col items-start">
+                    <span className="font-display text-xs text-void-100 leading-none">
+                      {session?.user?.name || 'Martian'}
+                    </span>
+                    <div className="mt-0.5">
+                      {getCitizenStatusBadge()}
                     </div>
                   </div>
+
+                  {/* Chevron */}
+                  <svg
+                    className={`w-3 h-3 text-void-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
-                
+
                 {/* Profile dropdown */}
                 {isProfileOpen && (
-                  <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800">
-                    <Link 
-                      href="/wallet"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    {/* Profile link disabled until page is implemented */}
-                    {/*<Link 
-                      href="/wallet/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      Profile
-                    </Link>*/}
-                    <button
-                      className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
-                      onClick={() => signOut({ callbackUrl: '/' })}
-                    >
-                      Sign out
-                    </button>
+                  <div className="absolute right-0 mt-2 w-56 origin-top-right animate-slide-down">
+                    <div className="bg-void-800/95 backdrop-blur-md border border-white/10 shadow-xl">
+                      {/* Header */}
+                      <div className="px-4 py-3 border-b border-white/5">
+                        <p className="font-display text-sm text-void-100">
+                          {session?.user?.name || 'Martian User'}
+                        </p>
+                        <p className="font-mono text-xs text-void-400 truncate">
+                          {session?.user?.email}
+                        </p>
+                      </div>
+
+                      {/* Menu items */}
+                      <div className="py-1">
+                        <Link
+                          href="/wallet"
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-void-200 hover:bg-white/5 hover:text-void-100 transition-colors"
+                          onClick={() => setIsProfileOpen(false)}
+                        >
+                          <svg className="w-4 h-4 text-void-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                          </svg>
+                          Dashboard
+                        </Link>
+
+                        <button
+                          className="w-full flex items-center gap-3 px-4 py-2 text-sm text-void-200 hover:bg-white/5 hover:text-void-100 transition-colors"
+                          onClick={() => signOut({ callbackUrl: '/' })}
+                        >
+                          <svg className="w-4 h-4 text-void-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
               <Link
                 href="/auth/sign-in"
-                className="relative flex items-center space-x-2 rounded-md bg-mars-red px-3 py-1.5 text-sm font-medium text-white hover:bg-mars-red/90"
+                className="btn-primary text-xs py-2"
               >
-                <span className="absolute -inset-1.5"></span>
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
-                <span>Sign In</span>
+                Sign In
               </Link>
             )}
+
+            {/* Mobile menu button */}
+            <button
+              className="lg:hidden p-2 text-void-400 hover:text-void-200 transition-colors"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {isMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state. */}
+      {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="sm:hidden" id="mobile-menu">
-          <div className="space-y-1 px-2 pb-3 pt-2">
-            <Link 
-              href="/wallet" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Wallet
-            </Link>
-            <Link 
-              href="/citizen" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Citizen
-            </Link>
-            <Link 
-              href="/congress" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Congress
-            </Link>
-            <Link 
-              href="/feed" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Feed
-            </Link>
-            <Link 
-              href="/logbook" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Logbook
-            </Link>
-            <Link 
-              href="/inventory" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Inventory
-            </Link>
-            <Link 
-              href="/planet" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Planet
-            </Link>
-            
-            {isAuthenticated && (
-              <>
-                <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-                <Link 
-                  href="/wallet" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                {/* Profile link disabled until page is implemented */}
-                {/*<Link 
-                  href="/wallet/profile" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Profile
-                </Link>*/}
-                <button
-                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-mars-red dark:text-white"
-                  onClick={() => signOut({ callbackUrl: '/' })}
-                >
-                  Sign out
-                </button>
-              </>
-            )}
+        <div className="lg:hidden animate-slide-down">
+          <div className="bg-void-900/98 backdrop-blur-md border-t border-white/5">
+            <div className="max-w-7xl mx-auto px-4 py-4">
+              {/* Navigation grid */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 font-display text-sm uppercase tracking-wider transition-all ${
+                        isActive
+                          ? 'bg-mars-rust/20 text-mars-dust border-l-2 border-mars-rust'
+                          : 'text-void-300 hover:bg-white/5 hover:text-void-100 border-l-2 border-transparent'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+
+              {/* Auth section for mobile */}
+              {isAuthenticated && (
+                <div className="pt-4 border-t border-white/5">
+                  <div className="flex items-center justify-between px-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-mars-rust to-mars-oxide rounded-sm flex items-center justify-center">
+                        <span className="font-display text-sm font-bold text-white">
+                          {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : '?'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-display text-sm text-void-100">
+                          {session?.user?.name}
+                        </p>
+                        {getCitizenStatusBadge()}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => signOut({ callbackUrl: '/' })}
+                      className="px-3 py-1.5 text-xs font-display uppercase tracking-wider text-void-300 hover:text-mars-rust transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
