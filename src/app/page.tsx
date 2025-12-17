@@ -57,8 +57,14 @@ function OrbitalRings() {
   );
 }
 
-// Data stream decoration
+// Data stream decoration - uses deterministic pattern to avoid hydration mismatch
 function DataStream() {
+  // Generate deterministic opacity values based on index
+  const getOpacity = (index: number) => {
+    const pattern = [0.5, 0.7, 0.6, 0.9, 0.55, 0.85, 0.65, 0.75, 0.8, 0.6];
+    return pattern[index % pattern.length];
+  };
+
   return (
     <div className="absolute right-0 top-0 bottom-0 w-px overflow-hidden opacity-30">
       <div className="animate-data-stream">
@@ -66,14 +72,14 @@ function DataStream() {
           <div
             key={i}
             className="h-1 w-px bg-colony-cyan mb-4"
-            style={{ opacity: Math.random() * 0.5 + 0.5 }}
+            style={{ opacity: getOpacity(i) }}
           />
         ))}
         {Array.from({ length: 50 }).map((_, i) => (
           <div
             key={i + 50}
             className="h-1 w-px bg-colony-cyan mb-4"
-            style={{ opacity: Math.random() * 0.5 + 0.5 }}
+            style={{ opacity: getOpacity(i + 5) }}
           />
         ))}
       </div>
